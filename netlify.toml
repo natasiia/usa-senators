@@ -1,4 +1,4 @@
 [[redirects]]
-  from = "/senators.json"
-  to = "/senators.html"
+  from = "/*"
+  to = "/index.html"
   status = 200
