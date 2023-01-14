@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USA Senators</title>
+    <!-- START[1] - icon for USA flag
+         https://favicon.io/emoji-favicons/flag-united-states/ -->
+    <link rel="icon" type="image/x-icon" href="/images/favicon-32x32.png">
+    <!-- END[1] -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+    <link rel="stylesheet" href="src/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fragment+Mono&display=swap" rel="stylesheet">
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="blurred-background">
+            <h1>Senators in numbers</h1>
+            <div class="myCards">
+                <div class="card" style="width: 18rem;">
+                    <div class="card-body">
+                        <h5 id="totalDem" class="card-title"></h5>
+                        <p id="totalDemDesc" class="card-text"></p>
+                    </div>
+                </div>
+                <div class="card" style="width: 18rem;">
+                    <div class="card-body">
+                        <h5 id="totalRep" class="card-title"></h5>
+                        <p id="totalRepDesc" class="card-text"></p>
+                    </div>
+                </div>
+                <div class="card" style="width: 18rem;">
+                    <div class="card-body">
+                        <h5 id="totalInd" class="card-title"></h5>
+                        <p id="totalIndDesc" class="card-text"></p>
+                    </div>
+                </div>
+            </div>
+
+            <ul id="listLeaders"></ul>
+
+            <label for="partiesDropdown">Filter by party:</label>
+            <select id="partiesDropdown" oninput="filterTable()">
+                <option selected="selected">Show all</option>
+            </select>
+
+            <label for="stateDropdown">Filter by state:</label>
+            <select id="stateDropdown" oninput="filterTable()">
+                <option selected="selected">Show all</option>
+            </select>
+
+            <label for="rankDropdown">Filter by rank:</label>
+            <select id="rankDropdown" oninput="filterTable()">
+                <option selected="selected">Show all</option>
+            </select>
+
+            <table id="all_senators" class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Party</th>
+                        <th>State</th>
+                        <th>Gender</th>
+                        <th>Rank</th>
+                        <th></th>
+                    </tr>
+                    <tr id="error_message_main">
+                        <td style="display:none;"></td>
+                    </tr>
+                </thead>
+                <tbody id="table_body">
+                </tbody>
+
+            </table>
+            <p id="one_senator_name"></p>
+            <ul id="one_senator_more" class="list-group"></ul>
+        </div>
+    </div>
+    <script>
+        let xmlhttp = new XMLHttpRequest();
+        let url = "senators.json";
+        let parsedObj;
+        xmlhttp.onreadystatechange = function () {
+            if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                parsedObj = JSON.parse(xmlhttp.responseText);
+
+                //sorting senators by party before using the parsed object
+                /*   START[2]
+                https://www.javascripttutorial.net/array/javascript-sort-an-array-of-objects/ */
+                parsedObj.objects.sort((a, b) => {
+                    let fa = a.party;
+                    let fb = b.party;
+
+                    if (fa < fb) {
+                        return -1;
+                    }
+                    if (fa > fb) {
+                        return 1;
+                    }
+                    return 0;
+                });
+                /* END [2] */
+
+                myFunction(parsedObj);
+            }
+        };
+
+        xmlhttp.open("GET", url, true);
+        xmlhttp.send();
+
+        function myFunction(obj) {
+            let totalNumbPartyDem = 0;
+            let totalNumbPartyRep = 0;
+            let totalNumbPartyInd = 0;
+            // Iterating over each object to check the party name
+            for (let i = 0; i < obj.objects.length; i++) {
+                if (obj.objects[i].party == "Democrat") {
+                    totalNumbPartyDem++
+                } else if (obj.objects[i].party == "Republican") {
+                    totalNumbPartyRep++
+                } else {
+                    totalNumbPartyInd++
+                }
+            }
+            // Showing the total number of senators in each party
+            document.getElementById("totalDem").innerHTML = totalNumbPartyDem;
+            document.getElementById("totalDemDesc").innerHTML = "Democrats";
+            document.getElementById("totalRep").innerHTML = totalNumbPartyRep;
+            document.getElementById("totalRepDesc").innerHTML = "Republicans";
+            document.getElementById("totalInd").innerHTML = totalNumbPartyInd;
+            document.getElementById("totalIndDesc").innerHTML = "Independents";
+
+            // Iterating over each object to get data about leadership roles in all parties
+            for (let i = 0; i < obj.objects.length; i++) {
+                if (obj.objects[i].leadership_title !== null) {
+                    document.getElementById("listLeaders").innerHTML += `<li> ${obj.objects[i].leadership_title}: ${obj.objects[i].person.firstname} ${obj.objects[i].person.lastname} (${obj.objects[i].party})</li>`;
+                }
+            }
+
+            // Iterating over each object to fill the table with data about every senator   
+            for (let i = 0; i < obj.objects.length; i++) {
+                document.getElementById("table_body").innerHTML += `<tr><td><strong>${obj.objects[i].person.firstname} ${obj.objects[i].person.lastname}</strong></td><td>${obj.objects[i].party}</td><td>${obj.objects[i].state}</td><td>${obj.objects[i].person.gender}</td><td>${obj.objects[i].senator_rank}</td><td><button class="btn btn-outline-primary" id = "${obj.objects[i].person.firstname}${obj.objects[i].person.lastname}" type="button" onclick = update("${obj.objects[i].person.lastname.replaceAll(' ', '')}") >More</button></td></tr>`
+            }
+
+            // Iterating over each object to store all possible parties names
+            let parties_array = [];
+            for (let i = 0; i < obj.objects.length; i++) {
+                parties_array.push(obj.objects[i].party);
+            }
+            // Removing all the duplicates from the parties names array by converting the initial into set and backwards
+            let filtered_parties_array = [...new Set(parties_array)];
+
+            // Iterating over each element inside filtered array to put into dropdown list
+            for (let i = 0; i < filtered_parties_array.length; i++) {
+                document.getElementById("partiesDropdown").innerHTML += `<option>${filtered_parties_array[i]}</option>`;
+            }
+
+            // Iterating over each object to store all possible state names
+            let states_array = [];
+            for (let i = 0; i < obj.objects.length; i++) {
+                states_array.push(obj.objects[i].state);
+            };
+
+            // Removing all the duplicates from the state names array by converting the initial into set and backwards
+            let filtered_states_array = [...new Set(states_array)];
+
+            // Iterating over each element inside filtered array to put into dropdown list
+            for (let i = 0; i < filtered_states_array.length; i++) {
+                document.getElementById("stateDropdown").innerHTML += `<option>${filtered_states_array[i]}</option>`;
+            };
+
+            // Iterating over each object to store all possible rank names
+            let ranks_array = [];
+            for (let i = 0; i < obj.objects.length; i++) {
+                ranks_array.push(obj.objects[i].senator_rank);
+            };
+            // Removing all the duplicates from the rank names array by converting the initial into set and backwards
+            let filtered_ranks_array = [...new Set(ranks_array)]
+
+            // Iterating over each element inside filtered array to put into dropdown list
+            for (let i = 0; i < filtered_ranks_array.length; i++) {
+                document.getElementById("rankDropdown").innerHTML += `<option>${filtered_ranks_array[i]}</option>`;
+            };
+        };
+
+        // Modifying the code from the reference [3] to sort by multiple values and adding error message if there is no values to show
+        /* START [3]
+                https://stackoverflow.com/questions/55520415/how-to-filter-data-of-a-html-table-with-a-drop-down-menu-with-javascript */
+        function filterTable() {
+            // Variables
+            let dropdown1, dropdown2, dropdown3, table, rows, cells, key, filter1, filter2, filter3, index;
+            dropdown1 = document.getElementById("partiesDropdown");
+            dropdown2 = document.getElementById("stateDropdown");
+            dropdown3 = document.getElementById("rankDropdown");
+            table = document.getElementById("all_senators");
+            rows = table.getElementsByTagName("tr");
+            filter1 = dropdown1.value;
+            filter2 = dropdown2.value;
+            filter3 = dropdown3.value;
+            index = 0;
+
+            // Loops through rows and hides those with keys that don't match the filter
+            for (let row of rows) { // `for...of` loops through the NodeList
+                cells = row.getElementsByTagName("td");
+                key1 = cells[1] || null;
+                key2 = cells[2] || null;
+                key3 = cells[4] || null;
+                // gets the n-th `td` or nothing
+                // if the filter is set to 'All', or this is the header row, or n-th `td` text matches filter
+                if (filter1 === "Show all" || !key1 || (filter1 === key1.innerText)) {
+                    row.style.display = ""; // shows this row
+                    if (filter2 === "Show all" || !key2 || (filter2 === key2.innerText)) {
+                        row.style.display = ""; // shows this row
+                        if (filter3 === "Show all" || !key3 || (filter3 === key3.innerText)) {
+                            row.style.display = ""; // shows this row
+                        } else {
+                            row.style.display = "none"; // hides this row
+                            index++
+                        }
+                    } else {
+                        row.style.display = "none"; // hides this row
+                        index++
+                    }
+                }
+                else {
+                    row.style.display = "none"; // hides this row
+                    index++
+                };
+            /* END [3] */
+                   
+                // Shows error message when there is no rows left to display
+                if (index === 100) {
+                    document.getElementById("error_message_main").innerHTML = "<th id='error_message' colspan='6'>No exact matches found!</th>";
+                } else {
+                    document.getElementById("error_message_main").innerHTML = "";
+                }
+            }
+            // Cleans the detailed information after changing the sorting keys
+            document.getElementById("one_senator_name").innerHTML = "";
+            document.getElementById("one_senator_more").innerHTML = "";
+        }
+     
+        function update(senatorId) {
+            showMoreInfo(parsedObj, senatorId);
+            scroll();
+        }
+
+        // on-click function that displays detailed information about each senator
+        function showMoreInfo(obj, senatorId) {
+            let office, dateOfBirth, startDate, twitter, youtube, website;
+            for (let i = 0; i < obj.objects.length; i++) {
+                if (senatorId === obj.objects[i].person.lastname.replaceAll(' ', '')) {
+                    office = obj.objects[i].extra.office;
+                    dateOfBirth = obj.objects[i].person.birthday;
+                    startDate = obj.objects[i].startdate;
+
+                    if (obj.objects[i].person.twitterid !== null) {
+                        twitter = obj.objects[i].person.twitterid;
+                    }
+
+                    if (obj.objects[i].person.youtubeid !== null) {
+                        youtube = obj.objects[i].person.youtubeid;
+                    }
+
+                    website = obj.objects[i].website;
+
+                    document.getElementById("one_senator_name").innerHTML = `<h3>Detailed information about ${obj.objects[i].person.firstname} ${obj.objects[i].person.lastname}:</h3>`;
+                }
+            }
+            document.getElementById("one_senator_more").innerHTML = `<li class="list-group-item">Office: ${office}</li><li class="list-group-item">Date of birth: ${dateOfBirth}</li><li class="list-group-item">Start date: ${startDate}</li>`;
+            if (twitter !== undefined) {
+                /*START [4] - logo of the twitter
+                    <a href="https://www.flaticon.com/free-icons/twitter" title="twitter icons">Twitter icons created by vidyavidz - Flaticon</a> */
+                document.getElementById("one_senator_more").innerHTML += `<li class="list-group-item"><img src="images/twitter.png" alt="Twitter logo" width="30" height="30"> ${twitter}</li>`
+               /*  END [4] */
+            }
+            if (youtube !== undefined) {
+                /* START [5] - logo of the youtube
+                    < a href = "https://www.flaticon.com/free-icons/youtube" title = "youtube icons" > Youtube icons created by vidyavidz - Flaticon</a > */
+                document.getElementById("one_senator_more").innerHTML += `<li class="list-group-item"><img src="images/youtube.png" alt="YouTube logo" width="30" height="30"> ${youtube}</li>`
+                /* END [5] */
+            }
+            /* START [6] - logo of the browser 
+                < a href = "https://www.flaticon.com/free-icons/spotify-sketch" title = "spotify sketch icons" > Spotify sketch icons created by vidyavidz - Flaticon</a > */
+            document.getElementById("one_senator_more").innerHTML += `<li class="list-group-item" id="browser"><img src="images/browser.png" alt="Browser logo" width="30" height="30"><a href="${website}" target="_blank" > Website</a></li>`;
+            /* END [6]*/
+        }
+
+        //scrolls to the imformation about specific senator at the end of the webpage
+        /* START [7]
+            https://stackoverflow.com/questions/13266746/scroll-jump-to-id-without-jquery */
+        function scroll() {
+                let ele = document.getElementById("one_senator_name");
+                window.scrollTo(ele.offsetLeft, ele.offsetTop);
+            }
+        /*END [7]*/ 
+    </script>
+</body>
+
+</html>
